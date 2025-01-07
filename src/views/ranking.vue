@@ -55,6 +55,7 @@ const fetchData = async (params: QueryParams) => {
         const response = await axios.get<ApiResponse>('index.php/api/ranking/dataRanking', {
             params: params
         });
+        console.log('接口返回数据:', response.data);
         if (response.data.code === 1) {
             const list = response.data.data.list.map(item => {
                 item.current_price = Number(item.current_price.toString().replace(/,/g, ''));
