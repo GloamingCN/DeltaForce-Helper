@@ -1,0 +1,64 @@
+name: Deploy WEB
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: 检出代码
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '22'  # 你可以根据需要调整 Node.js 版本
+
+    - name: Install dependencies
+      run: |
+        npm install  # 安装项目依赖
+
+    - name: Build the project
+      run: |
+        npm run build  # 构建项目，假设你的构建命令是 `npm run build`
+
+    - name: Create tar.gz archive
+      run: |
+        tar -czvf dist.tar.gz ./dist  # 将构建产物打包为 tar.gz 文件
+
+
+    # Step 3: 上传压缩包到指定服务器
+    - name: Upload tarball to server
+      env:
+        SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        SERVER_USER: ${{ secrets.SERVER_USER }}
+        SERVER_PORT: ${{ secrets.SERVER_PORT }}
+        SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -p $SERVER_PORT $SERVER_HOST >> ~/.ssh/known_hosts
+        scp -P $SERVER_PORT dist.tar.gz $SERVER_USER@$SERVER_HOST:$SERVER_PATH
+
+    # Step 4: 解压压缩包并执行操作
+    - name: Extract tarball on server
+      env:
+        SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        SERVER_USER: ${{ secrets.SERVER_USER }}
+        SERVER_PORT: ${{ secrets.SERVER_PORT }}
+        SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        ssh -p $SERVER_PORT -i ~/.ssh/id_rsa $SERVER_USER@$SERVER_HOST << EOF
+        cd $SERVER_PATH
+        tar -zxvf dist.tar.gz -C $SERVER_PATH
+        chown -R 1000:1000 $SERVER_PATH
+        rm dist.tar.gz
+        EOF
