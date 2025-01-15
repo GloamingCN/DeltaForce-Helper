@@ -12,12 +12,21 @@ interface TableColumn {
 }
 
 interface RankingData {
+    object_id: string;
+    name: string; 
     pre_pic: string;
-    object_name: string;
+    primary_class: string;
+    second_class: string;
+    second_class_cn: string;
     current_price: number;
     compare_price: number;
+    avg_price: number;
+    highest_price: number;
+    lowest_price: number;
     price_change: number;
-    price_change_percent: string;
+    price_change_percent: number;
+    rank: number;
+    update_time: string;
 }
 
 interface QueryParams {
@@ -43,29 +52,34 @@ const data = ref<RankingData[]>([]);
 const total = ref<number>(0);
 const queryParams = ref<QueryParams>({
     time_range: 'day',
-    sort_type: 'change',
+    sort_type: 'price_up',
     page: 1,
     page_size: 10
 });
+
+const formatPrice = (price: number | string): number => {
+    if (typeof price === 'string') {
+        price = parseFloat(price.replace(/,/g, ''));
+    }
+    return Math.floor(price); // 使用Math.floor去除小数部分,不四舍五入
+};
 
 const fetchData = async (params: QueryParams) => {
     loading.value = true;
     showheader.value = false;
     try {
-        const response = await axios.get<ApiResponse>('index.php/api/ranking/dataRanking', {
+        const response = await axios.get<ApiResponse>('index.php/api/v1.rankings/getRankings', {
             params: params
         });
         console.log('接口返回数据:', response.data);
         if (response.data.code === 1) {
-            const list = response.data.data.list.map(item => {
-                item.current_price = Number(item.current_price.toString().replace(/,/g, ''));
-                item.compare_price = Number(item.compare_price.toString().replace(/,/g, ''));
-                item.price_change = Number(item.price_change.toString().replace(/,/g, ''));
-                item.price_change_percent = item.compare_price !== 0 ? ((item.price_change / item.compare_price) * 100).toFixed(2) : '0.00';
-                return {
-                    ...item,
-                };
-            });
+            const list = response.data.data.list.map(item => ({
+                ...item,
+                current_price: formatPrice(item.current_price),
+                compare_price: formatPrice(item.compare_price),
+                price_change: formatPrice(item.price_change),
+                price_change_percent: formatPrice(item.price_change_percent)
+            }));
             data.value = list;
             total.value = response.data.data.total;
         } else {
@@ -97,7 +111,7 @@ const columns = ref<TableColumn[]>([
     },
     {
         title: '物品名称',
-        dataIndex: 'object_name',
+        dataIndex: 'name',
         slotName: 'object_name',
         align: 'center',
         width: 300,
@@ -140,8 +154,8 @@ const columns = ref<TableColumn[]>([
                 <template #image="{ record }">
                     <a-image :src="record.pre_pic" :width="50" alt="预览图" />
                 </template>
-                <template #object_name="{ record }">
-                    <span class="object-name">{{ record.object_name }}</span>
+                <!-- <template #name="{ record }">
+                    <span class="object-name">{{ record.name }}</span>
                 </template>
                 <template #current_price="{ record }">
                     <a-statistic :value="record.current_price" show-group-separator />
@@ -151,9 +165,9 @@ const columns = ref<TableColumn[]>([
                 </template>
                 <template #price_change="{ record }">
                     <a-statistic :value="record.price_change" show-group-separator />
-                </template>
+                </template> -->
                 <template #price_change_percent="{ record }">
-                    <a-statistic :value="Number(record.price_change_percent)" :precision="2"
+                    <a-statistic :value="Number(record.price_change_percent)" :precision="0"
                         :value-style="{ color: '#0fbf60' }">
                         <template #prefix>
                             <icon-arrow-rise />
