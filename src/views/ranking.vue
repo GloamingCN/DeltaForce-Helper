@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { IconArrowRise } from '@arco-design/web-vue/es/icon';
+import { IconArrowRise, IconArrowFall } from '@arco-design/web-vue/es/icon';
 
 interface TableColumn {
     title: string;
@@ -13,7 +13,7 @@ interface TableColumn {
 
 interface RankingData {
     object_id: string;
-    name: string; 
+    name: string;
     pre_pic: string;
     primary_class: string;
     second_class: string;
@@ -103,42 +103,49 @@ onMounted(() => {
 
 const columns = ref<TableColumn[]>([
     {
+        title: '排名',
+        dataIndex: 'rank',
+        slotName: 'rank',
+        align: 'center',
+        width: 190
+    },
+    {
         title: '缩略图',
         dataIndex: 'pre_pic',
-        slotName: 'image',
-        align: 'center',
+        slotName: 'pre_pic',
+        // align: 'center',
         width: 150
     },
     {
         title: '物品名称',
         dataIndex: 'name',
-        slotName: 'object_name',
-        align: 'center',
-        width: 300,
+        slotName: 'name',
+        // align: 'left',
+        width: 350,
     },
     {
         title: '当前价格',
         dataIndex: 'current_price',
         slotName: 'current_price',
-        align: 'center'
+        // align: 'center'
     },
     {
         title: '昨日价格',
         dataIndex: 'compare_price',
         slotName: 'compare_price',
-        align: 'center'
+        // align: 'center'
     },
     {
         title: '价格变化',
         dataIndex: 'price_change',
         slotName: 'price_change',
-        align: 'center'
+        // align: 'center'
     },
     {
         title: '价格变化百分比',
         dataIndex: 'price_change_percent',
         slotName: 'price_change_percent',
-        align: 'center'
+        // align: 'center'
     }
 ]);
 </script>
@@ -149,34 +156,53 @@ const columns = ref<TableColumn[]>([
             <a-breadcrumb-item>主页</a-breadcrumb-item>
         </a-breadcrumb>
         <a-layout-content>
-            <a-table :columns="columns" :data="data" :pagination="false" :loading="loading" :show-header="showheader">
-
-                <template #image="{ record }">
-                    <a-image :src="record.pre_pic" :width="50" alt="预览图" />
-                </template>
-                <!-- <template #name="{ record }">
-                    <span class="object-name">{{ record.name }}</span>
-                </template>
-                <template #current_price="{ record }">
-                    <a-statistic :value="record.current_price" show-group-separator />
-                </template>
-                <template #compare_price="{ record }">
-                    <a-statistic :value="record.compare_price" show-group-separator />
-                </template>
-                <template #price_change="{ record }">
-                    <a-statistic :value="record.price_change" show-group-separator />
-                </template> -->
-                <template #price_change_percent="{ record }">
-                    <a-statistic :value="Number(record.price_change_percent)" :precision="0"
-                        :value-style="{ color: '#0fbf60' }">
-                        <template #prefix>
-                            <icon-arrow-rise />
-                        </template>
-                        <template #suffix>%</template>
-                    </a-statistic>
-                </template>
-
-            </a-table>
+            <a-card>
+                <a-table :columns="columns" :data="data" :pagination="false" :loading="loading"
+                    :show-header="showheader">
+                    <template #rank="{ record }">
+                        <a-space size="large" style="font-weight: 600; font-size: 26px; color: #455A64;">{{ record.rank
+                            }}</a-space>
+                    </template>
+                    <template #pre_pic="{ record }">
+                        <a-image :src="record.pre_pic" :height="50" :width="50" alt="预览图" />
+                    </template>
+                    <template #name="{ record }">
+                        <a-space size="large" style="font-weight: 600; font-size: 26px; color: #455A64;">{{ record.name
+                            }}</a-space>
+                    </template>
+                    <template #current_price="{ record }">
+                        <a-statistic :value="record.current_price" show-group-separator
+                            :value-style="{ fontWeight: 600, color: '#455A64' }" />
+                    </template>
+                    <template #compare_price="{ record }">
+                        <a-statistic :value="record.compare_price" show-group-separator
+                            :value-style="{ fontWeight: 600, color: '#455A64' }" />
+                    </template>
+                    <template #price_change="{ record }">
+                        <a-statistic :value="Math.abs(record.price_change)" show-group-separator :value-style="{
+                            fontWeight: 600,
+                            color: record.price_change >= 0 ? '#FF5252' : '#0fbf60'
+                        }">
+                            <template #prefix>
+                                {{ record.price_change >= 0 ? '+' : '-' }}
+                            </template>
+                        </a-statistic>
+                    </template>
+                    <template #price_change_percent="{ record }">
+                        <a-statistic :value="Number(record.price_change_percent)" :precision="0"
+                            show-group-separator :value-style="{
+                                fontWeight: 600,
+                                color: record.price_change_percent >= 0 ? '#FF5252' : '#0fbf60'
+                            }">
+                            <template #prefix>
+                                <icon-arrow-rise v-if="record.price_change_percent >= 0" />
+                                <icon-arrow-fall v-else />
+                            </template>
+                            <template #suffix>%</template>
+                        </a-statistic>
+                    </template>
+                </a-table>
+            </a-card>
         </a-layout-content>
     </a-layout>
 </template>
@@ -192,9 +218,5 @@ const columns = ref<TableColumn[]>([
     font-size: 16px;
     font-stretch: condensed;
     text-align: center;
-}
-.object-name {
-    font-size: 26px;  /* 设置字体大小为 18px */
-    font-weight: 500; /* 可选：适当加粗 */
 }
 </style>
